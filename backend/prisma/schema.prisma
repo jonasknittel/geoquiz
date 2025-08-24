@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  name String
+  games Game[]
+}
+
+model Game {
+  id Int @id @default(autoincrement())
+
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+
+  map Map @relation(fields: [mapId], references: [id])
+  mapId Int
+
+  mouseMeasurements MouseMeasurements[]
+  startTime DateTime
+  score Float
+}
+
+model Map {
+  id Int @id @default(autoincrement())
+
+  game Game[]
+
+  name String
+  directory String
+}
+
+model MouseMeasurements {
+  id Int @id @default(autoincrement())
+
+  game Game @relation(fields: [gameId], references: [id])
+  gameId Int
+
+  time Int
+  xPosition Int
+  yPosition Int
+  click Boolean
+}
