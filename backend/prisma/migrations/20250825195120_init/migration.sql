@@ -1,0 +1,34 @@
+-- CreateTable
+CREATE TABLE "User" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Game" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "mapId" INTEGER NOT NULL,
+    "startTime" DATETIME NOT NULL,
+    "score" REAL NOT NULL,
+    CONSTRAINT "Game_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Game_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Map" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "directory" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "MouseMeasurements" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "gameId" INTEGER NOT NULL,
+    "time" INTEGER NOT NULL,
+    "xPosition" INTEGER NOT NULL,
+    "yPosition" INTEGER NOT NULL,
+    "click" BOOLEAN NOT NULL,
+    CONSTRAINT "MouseMeasurements_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

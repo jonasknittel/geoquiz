@@ -1,12 +1,14 @@
 import express from "express";
 import type { Request, Response } from "express";
+import { PORT } from './secrets.js';
+import rootRouter from "./routes/rootRoutes.js";
 
 const app = express();
 
-app.get('/', (req:Request, res:Response) => {
-    res.send('Hello World');
-});
+app.use(express.json());
 
-app.listen(3000, () => {
+app.use('/api', rootRouter);
+
+app.listen(PORT, () => {
     console.log('App running on port 3000');
 });
