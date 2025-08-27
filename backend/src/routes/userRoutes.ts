@@ -3,6 +3,6 @@ import { getCurrentUser } from "../controller/userController.js";
 
 const userRouter:Router = Router();
 
-userRouter.get('/', getCurrentUser);
+userRouter.get('/me', getCurrentUser);
 
 export default userRouter;

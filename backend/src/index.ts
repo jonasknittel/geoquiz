@@ -1,11 +1,15 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import type { Request, Response } from "express";
 import { PORT } from './secrets.js';
 import rootRouter from "./routes/rootRoutes.js";
+import { checkUser } from "./middleware/checkUser.js";
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
+app.use(checkUser);
 
 app.use('/api', rootRouter);
 
