@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import type { Request, Response, NextFunction } from "express";
 import prisma from "../db/client.js";
 
@@ -13,8 +12,9 @@ export async function checkUser(req: Request, res: Response, next: NextFunction)
 
         // Set cookie
         res.cookie("userId", user.id);
+        res.send(user);
+    } else {
+        // So request call isn't terminated
+        next();
     }
-
-    // So request call isn't terminated
-    next();
 }
