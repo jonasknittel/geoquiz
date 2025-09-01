@@ -44,6 +44,23 @@ export const getGameById = async (req:Request, res:Response) => {
     res.send(games);
 }
 
+export const getFullGameById = async (req:Request, res:Response) => {
+    const gameId = Number(req.params.gameId);
+
+    if (isNaN(gameId)) return res.status(400).json({ error: "Invalid gameId" });
+
+    const games = await prisma.game.findMany({
+        where: {
+            id: gameId
+        },
+        include: {
+            mouseMeasurements: true
+        }
+    });
+
+    res.status(200).json(games);
+}
+
 export const createGame = async (req:Request, res:Response) => {
     const game = req.body.game;
     const userId = Number(req.cookies.userId);

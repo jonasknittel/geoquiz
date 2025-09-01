@@ -7,6 +7,7 @@ export const getAllMaps = async (req:Request, res:Response) => {
     res.status(200).json(maps);
 };
 
+// Send JSON FILE?
 export const getMapById = async (req:Request, res:Response) => {
     const mapId = Number(req.params.mapId);
     if (!mapId) {
