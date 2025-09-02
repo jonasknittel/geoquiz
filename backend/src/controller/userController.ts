@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import prisma from "../db/client.js";
 
 export const getCurrentUser = async (req:Request, res:Response) => {
+    
     const id = Number(req.cookies.userId);
 
 
@@ -10,6 +11,7 @@ export const getCurrentUser = async (req:Request, res:Response) => {
             id: id
         }
     });
+    console.log("getCurrentUser(): ", req.cookies.userId);
     res.send(user);
 }
 
