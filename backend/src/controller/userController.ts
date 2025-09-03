@@ -4,7 +4,9 @@ import prisma from "../db/client.js";
 export const getCurrentUser = async (req:Request, res:Response) => {
     
     const id = Number(req.cookies.userId);
-
+    if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ error: "Invalid user ID in cookie." });
+    }
 
     const user = await prisma.user.findUnique({
         where: {

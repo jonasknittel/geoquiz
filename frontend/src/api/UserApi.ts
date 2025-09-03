@@ -5,11 +5,15 @@ import { api } from "./api";
 
 export const getCurrentUserApi = async (): Promise<User> => {
     const res = await api.get<UserDTO>("/users/me");
-
-    console.log('getCurrentUserApi');
-
-    const user = mapToUser(res.data);
     
     return mapToUser(res.data);
+}
 
+export const updateCurrentUserNameApi = async (user: UserDTO): Promise<User> => {
+    const name = user.name;
+    const res = await api.patch<UserDTO>("/users/me", {
+        name: name
+    });
+
+    return mapToUser(res.data);
 }
