@@ -1,20 +1,32 @@
 import { useState } from 'react';
-import { getCurrentUserApi } from './api/UserApi';
+import { getCurrentUserApi, updateCurrentUserNameApi } from './api/UserApi';
+import type { UserDTO } from './DTOs/userDTO';
+import { User } from './models/User';
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [text, setText] = useState<string>("Yeah");
+  const [user, setUser] = useState<User>();
+  const [inputName, setInputName] = useState<string>("");
 
   async function displayCurrentUser() {
-    const user = await getCurrentUserApi();
+    const userData = await getCurrentUserApi();
 
-    setText(user.name);
-  } 
+    setUser(userData);
+  }
+
+  async function updateName() {
+    const dto: UserDTO = { name: inputName };
+    const newUser = await updateCurrentUserNameApi(dto);
+
+    setUser(newUser);
+  }
 
   return (
     <>
-    <button onClick={displayCurrentUser}>TEST ME</button>
-    <div>{text}</div>
+    <button onClick={ displayCurrentUser }>TEST ME</button>
+    <div>{ user?.name }</div>
+
+    <button onClick={ updateName }>Update Name</button>
+    <input onChange={(e) => setInputName(e.target.value)}></input>
     </>
   )
 }

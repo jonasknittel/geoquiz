@@ -10,9 +10,8 @@ export const getCurrentUserApi = async (): Promise<User> => {
 }
 
 export const updateCurrentUserNameApi = async (user: UserDTO): Promise<User> => {
-    const name = user.name;
     const res = await api.patch<UserDTO>("/users/me", {
-        name: name
+        user
     });
 
     return mapToUser(res.data);
