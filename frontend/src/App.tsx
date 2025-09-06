@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getCurrentUserApi, updateCurrentUserNameApi } from './api/UserApi';
 import type { UserDTO } from './DTOs/userDTO';
 import { User } from './models/User';
+import { MapView } from './components/MapView';
 
 function App() {
   const [user, setUser] = useState<User>();
@@ -22,11 +23,12 @@ function App() {
 
   return (
     <>
-    <button onClick={ displayCurrentUser }>TEST ME</button>
-    <div>{ user?.name }</div>
+      <MapView/>
+      <button onClick={ displayCurrentUser }>TEST ME</button>
+      <div>{ user?.name }</div>
 
-    <button onClick={ updateName }>Update Name</button>
-    <input onChange={(e) => setInputName(e.target.value)}></input>
+      <button onClick={ updateName }>Update Name</button>
+      <input onChange={(e) => setInputName(e.target.value)}></input>
     </>
   )
 }
