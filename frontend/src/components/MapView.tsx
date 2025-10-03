@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapContainer, Rectangle, TileLayer, useMap, GeoJSON } from "react-leaflet"
-import type { GeoJsonObject, Feature, Geometry, GeoJsonProperties } from "geojson";
+import type { GeoJsonObject, Feature, Geometry, FeatureCollection } from "geojson";
 import 'leaflet/dist/leaflet.css';
 import L, { Layer } from 'leaflet';
 
@@ -57,6 +57,9 @@ const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, chan
 export const MapView = () => {
     const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
     const [ratio, setRatio] = useState<number>(1);
+    const [features, setFeatures] = useState<string[]>([]);
+    const [guessedFeatures, setGuessedFeatures] = useState<string[]>([]);
+    const [currentQuestion, setCurrentQuestion] = useState<string>("Steiermark");
 
     useEffect(() => {
         fetch("/testgeojson/quiz_test.geojson")
@@ -65,13 +68,41 @@ export const MapView = () => {
             console.log("Gesamte GeoJSON-Daten (NEU GELADEN):", data);
 
             if ('features' in data && Array.isArray(data.features)) {
+                
+                // Fill state features
                 console.log("Anzahl der Features:", data.features.length);
+                const namesArray = data.features.map(feature => {
+                    const name = feature.properties?.name || `Feature ohne Namen (${feature.geometry.type})`;
+                    return name;
+                });
+
+                setFeatures(namesArray); 
             }
             setGeoData(data);
+
         })
         .catch((err) => console.error("Failed to load GeoJSON:", err));
-
+        
     }, []);
+
+    const changeCurrentQuestion = () => {
+
+        setGuessedFeatures([...guessedFeatures, currentQuestion]);
+
+        setFeatures((features) => features.filter((name) => name !== currentQuestion));
+
+        setCurrentQuestion(features[Math.floor(Math.random() * features.length)])
+    }
+
+    const getFeatureStyle = (feature: Feature<Geometry, any> | undefined) => {
+        const areaName = feature?.properties?.name;
+
+        if (features.includes(areaName)) {
+            return { color: 'blue' }
+        } else {
+            return { color: 'green' }
+        }
+    }
 
     const onEachFeature = (
         feature: Feature<Geometry, any>, 
@@ -80,32 +111,63 @@ export const MapView = () => {
         const name = feature.properties?.name;
         if (!name) return;
 
-        layer.bindTooltip(name, { sticky: true });
+        layer.on({
+            click: () => {
+                console.log( currentQuestion + name);
+                if (currentQuestion === name) {
+                    changeCurrentQuestion();
+                }
+            }
+        },
+//            mouseover: (e) => {
+//                e.target.setStyle({
+//                    weight: 5,
+//                    color: 'grey'
+//                });
+//            },
+//            mouseout: (e) => {
+//                e.target.setStyle({
+//                    weight: 2,
+//                    color: 'blue'
+//                });
+//            }
+        )
   }
 
     return (
-        <div style={{height: 800, width: 800 * ratio}}>
-            <MapContainer
-                style={{width: '100%', height: '100%'}}
-                zoomControl={false}
-                scrollWheelZoom={false}
-                doubleClickZoom={false}
-                zoomSnap={0} // Necessary for fitBounds()
-                dragging={false}
-            >
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="&copy; OpenStreetMap contributors"
-                />
-                { geoData && 
-                    <GeoJSON 
-                        data={geoData}
-                        onEachFeature={onEachFeature}
-                        style={{interactive: true}}
-                    /> 
-                }
-                <MapBounds data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
-            </MapContainer>
+        <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: "center"
+        }}>
+        <div style={{
+            padding: '20px'
+        }}>{ currentQuestion }</div>
+            <div style={{height: 800, width: 800 * ratio}}>
+                <MapContainer
+                    style={{width: '100%', height: '100%'}}
+                    zoomControl={false}
+                    scrollWheelZoom={false}
+                    doubleClickZoom={false}
+                    zoomSnap={0} // Necessary for fitBounds()
+                    dragging={false}
+                >
+                    <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution="&copy; OpenStreetMap contributors"
+                    />
+                    { geoData && 
+                        <GeoJSON 
+                            data={geoData}
+                            key={currentQuestion}
+                            onEachFeature={onEachFeature}
+                            interactive={true}
+                            style={getFeatureStyle}
+                        /> 
+                    }
+                    <MapBounds data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
+                </MapContainer>
+            </div>
         </div>
     )
 }

@@ -23,7 +23,16 @@ function App() {
 
   return (
     <>
-      <MapView/>
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}
+      >
+        <MapView/>
+      </div>
       <button onClick={ displayCurrentUser }>TEST ME</button>
       <div>{ user?.name }</div>
 
