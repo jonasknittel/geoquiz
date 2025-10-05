@@ -3,6 +3,7 @@ import { MapContainer, Rectangle, TileLayer, useMap, GeoJSON } from "react-leafl
 import type { GeoJsonObject, Feature, Geometry, FeatureCollection } from "geojson";
 import 'leaflet/dist/leaflet.css';
 import L, { Layer } from 'leaflet';
+import { Button } from 'primereact/button';
 
 const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, changeLatLngRatio: (ratio: number) => void}) => {
     const map = useMap();
@@ -60,6 +61,7 @@ export const MapView = () => {
     const [features, setFeatures] = useState<string[]>([]);
     const [guessedFeatures, setGuessedFeatures] = useState<string[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<string>("Steiermark");
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
     useEffect(() => {
         fetch("/testgeojson/quiz_test.geojson")
@@ -87,11 +89,13 @@ export const MapView = () => {
 
     const changeCurrentQuestion = () => {
 
+        const featuresUpdated = features.filter((name) => name !== currentQuestion)
+
         setGuessedFeatures([...guessedFeatures, currentQuestion]);
 
-        setFeatures((features) => features.filter((name) => name !== currentQuestion));
+        setFeatures(featuresUpdated);
 
-        setCurrentQuestion(features[Math.floor(Math.random() * features.length)])
+        setCurrentQuestion(featuresUpdated[Math.floor(Math.random() * featuresUpdated.length)])
     }
 
     const getFeatureStyle = (feature: Feature<Geometry, any> | undefined) => {
@@ -119,20 +123,8 @@ export const MapView = () => {
                 }
             }
         },
-//            mouseover: (e) => {
-//                e.target.setStyle({
-//                    weight: 5,
-//                    color: 'grey'
-//                });
-//            },
-//            mouseout: (e) => {
-//                e.target.setStyle({
-//                    weight: 2,
-//                    color: 'blue'
-//                });
-//            }
         )
-  }
+    }
 
     return (
         <div style={{ 
@@ -142,7 +134,10 @@ export const MapView = () => {
         }}>
         <div style={{
             padding: '20px'
-        }}>{ currentQuestion }</div>
+        }}>
+        { isPlaying ? <div>{ currentQuestion }</div> : <Button onClick={() => setIsPlaying(true)}>START GAME</Button>}
+        </div>
+
             <div style={{height: 800, width: 800 * ratio}}>
                 <MapContainer
                     style={{width: '100%', height: '100%'}}

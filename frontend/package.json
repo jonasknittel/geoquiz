@@ -13,6 +13,8 @@
     "axios": "^1.11.0",
     "cors": "^2.8.5",
     "leaflet": "^1.9.4",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-leaflet": "^5.0.0"
