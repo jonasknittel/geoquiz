@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, Rectangle, TileLayer, useMap, GeoJSON } from "react-leaflet"
 import type { GeoJsonObject, Feature, Geometry, FeatureCollection } from "geojson";
 import 'leaflet/dist/leaflet.css';
@@ -55,13 +55,27 @@ const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, chan
     ) : null;
 }
 
+const Recorder = ({ active, onData }: {active: boolean, onData: (data:any) => void }) => {
+    const map = useMap();
+
+    if (!active) return null;
+
+    return null;
+}
+
 export const MapView = () => {
     const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
     const [ratio, setRatio] = useState<number>(1);
-    const [features, setFeatures] = useState<string[]>([]);
+    const [toGuessFeatures, setToGuessFeatures] = useState<string[]>([]);
     const [guessedFeatures, setGuessedFeatures] = useState<string[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<string>("Steiermark");
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+    const features = useRef<string[]>([]);
+    const startRef = useRef<number | null>(null);
+    const endRef = useRef<number | null>(null);
+    const mousePositions = useRef<number[]>([]);
+    const stopRecordMousePosition = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         fetch("/testgeojson/quiz_test.geojson")
@@ -78,7 +92,7 @@ export const MapView = () => {
                     return name;
                 });
 
-                setFeatures(namesArray); 
+                features.current = namesArray; 
             }
             setGeoData(data);
 
@@ -89,11 +103,24 @@ export const MapView = () => {
 
     const changeCurrentQuestion = () => {
 
-        const featuresUpdated = features.filter((name) => name !== currentQuestion)
+        const featuresUpdated = toGuessFeatures.filter((name) => name !== currentQuestion)
+
+        if (featuresUpdated.length == 0) {
+            if (startRef.current == null) return;
+            endRef.current = performance.now();
+            const ms = endRef.current - startRef.current;
+            const seconds = (ms / 1000).toFixed(3);
+            console.log(seconds);
+
+            setIsPlaying(false);
+            if (stopRecordMousePosition.current !== null) {
+                stopRecordMousePosition.current();
+            }
+        }
 
         setGuessedFeatures([...guessedFeatures, currentQuestion]);
 
-        setFeatures(featuresUpdated);
+        setToGuessFeatures(featuresUpdated);
 
         setCurrentQuestion(featuresUpdated[Math.floor(Math.random() * featuresUpdated.length)])
     }
@@ -101,7 +128,7 @@ export const MapView = () => {
     const getFeatureStyle = (feature: Feature<Geometry, any> | undefined) => {
         const areaName = feature?.properties?.name;
 
-        if (features.includes(areaName)) {
+        if (toGuessFeatures.includes(areaName)) {
             return { color: 'blue' }
         } else {
             return { color: 'green' }
@@ -122,8 +149,28 @@ export const MapView = () => {
                     changeCurrentQuestion();
                 }
             }
-        },
-        )
+        })
+    }
+
+    const recordMousePositions = () => {
+        const id = setInterval(() => {
+            
+            mousePositions.current = [...mousePositions.current, ]
+            console.log("tick", performance.now());
+        }, 500);
+
+        return () => clearInterval(id);
+    }
+
+    const startGame = () => {
+        const startFeatures = features.current;
+        setIsPlaying(true);
+
+        // Fill game
+        setToGuessFeatures(startFeatures);
+        setGuessedFeatures([]);
+        setCurrentQuestion(startFeatures[Math.floor(Math.random() * startFeatures.length)]);
+        stopRecordMousePosition.current = recordMousePositions();
     }
 
     return (
@@ -135,7 +182,7 @@ export const MapView = () => {
         <div style={{
             padding: '20px'
         }}>
-        { isPlaying ? <div>{ currentQuestion }</div> : <Button onClick={() => setIsPlaying(true)}>START GAME</Button>}
+        { isPlaying ? <div>{ currentQuestion }</div> : <Button onClick={() => {startGame(); startRef.current = performance.now();}}>START GAME</Button>}
         </div>
 
             <div style={{height: 800, width: 800 * ratio}}>
@@ -161,6 +208,7 @@ export const MapView = () => {
                         /> 
                     }
                     <MapBounds data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
+                    {/*<Recorder active={true} onData={null}></Recorder>*/}
                 </MapContainer>
             </div>
         </div>
