@@ -25,31 +25,30 @@ model Game {
   user User @relation(fields: [userId], references: [id])
   userId Int
 
-  map Map @relation(fields: [mapId], references: [id])
-  mapId Int
+  // map Map @relation(fields: [mapId], references: [id])
+  // mapId Int
 
-  mouseMeasurements MouseMeasurements[]
-  startTime DateTime
+  mouseCoordinates MouseCoordinates[]
   score Float
 }
 
 model Map {
   id Int @id @default(autoincrement())
 
-  game Game[]
+  // game Game[]
 
   name String
   directory String
 }
 
-model MouseMeasurements {
+model MouseCoordinates {
   id Int @id @default(autoincrement())
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
   gameId Int
 
   time Int
-  xPosition Int
-  yPosition Int
+  lng Float
+  lat Float
   click Boolean
 }

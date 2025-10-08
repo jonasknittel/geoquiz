@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import prisma from "../db/client.js";
+import type { MouseCoordinates } from "@prisma/client";
 
 export const getGamesByUser = async (req:Request, res:Response) => {
     const userId = Number(req.cookies.userId);
@@ -15,19 +16,19 @@ export const getGamesByUser = async (req:Request, res:Response) => {
     res.send(games);
 }
 
-export const getGamesByMap = async (req:Request, res:Response) => {
-    const mapId = Number(req.params.mapId);
-
-    if (isNaN(mapId)) return res.status(400).json({ error: "Invalid mapId" });
-
-    const games = await prisma.game.findMany({
-        where: {
-            mapId: mapId
-        }
-    });
-
-    res.send(games);
-}
+// export const getGamesByMap = async (req:Request, res:Response) => {
+//     const mapId = Number(req.params.mapId);
+// 
+//     if (isNaN(mapId)) return res.status(400).json({ error: "Invalid mapId" });
+// 
+//     const games = await prisma.game.findMany({
+//         where: {
+//             mapId: mapId
+//         }
+//     });
+// 
+//     res.send(games);
+// }
 
 // CRUD
 export const getGameById = async (req:Request, res:Response) => {
@@ -54,7 +55,7 @@ export const getFullGameById = async (req:Request, res:Response) => {
             id: gameId
         },
         include: {
-            mouseMeasurements: true
+            mouseCoordinates: true
         }
     });
 
@@ -62,22 +63,21 @@ export const getFullGameById = async (req:Request, res:Response) => {
 }
 
 export const createGame = async (req:Request, res:Response) => {
-    const game = req.body.game;
+    const game = req.body;
     const userId = Number(req.cookies.userId);
 
     if (isNaN(userId)) return res.status(400).json({ error: "Invalid userId" });
 
-    const createdGame = prisma.game.create({
+    const createdGame = await prisma.game.create({
         data: {
             userId: userId,
-            mapId: Number(game.mapId),
-            startTime: new Date(game.startTime),
+            // mapId: Number(game.mapId),
             score: Number(game.score),
-            mouseMeasurements: { 
-                create: game.mouseMeasurements 
+            mouseCoordinates: { 
+                create: game.mouseCoordinates 
             }
         },
-        include: { mouseMeasurements: true },
+        include: { mouseCoordinates: true },
     });
     res.send(createdGame);
 }

@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { MapContainer, Rectangle, TileLayer, useMap, GeoJSON } from "react-leaflet"
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MapContainer, Rectangle, TileLayer, useMap, GeoJSON, useMapEvents } from "react-leaflet"
 import type { GeoJsonObject, Feature, Geometry, FeatureCollection } from "geojson";
 import 'leaflet/dist/leaflet.css';
 import L, { Layer } from 'leaflet';
 import { Button } from 'primereact/button';
+import { MouseCoordinates } from "../models/MouseCoordinates";
+import { postGameApi } from "../api/GameApi";
+import type { GameDTO } from "../DTOs/gameDTO";
 
 const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, changeLatLngRatio: (ratio: number) => void}) => {
     const map = useMap();
@@ -55,10 +58,74 @@ const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, chan
     ) : null;
 }
 
-const Recorder = ({ active, onData }: {active: boolean, onData: (data:any) => void }) => {
-    const map = useMap();
+type RecorderProps = {
+    active: boolean;
+    onData: (data: MouseCoordinates[]) => void;
+}
 
-    if (!active) return null;
+const Recorder = ({ active, onData }: {active: boolean, onData: (data:any) => void }) => {
+    const currentMousePosRef = useRef<MouseCoordinates>(null); 
+    const mousePathRef = useRef<MouseCoordinates[]>([]); 
+    const intervalRef = useRef<number | null>(null);
+
+    useMapEvents({
+        mousemove: (e) => {
+            currentMousePosRef.current = {
+                lat: e.latlng.lat,
+                lng: e.latlng.lng,
+                time: performance.now(),
+                click: e.originalEvent.buttons === 1,
+            };
+        },
+        mouseout: () => {
+            currentMousePosRef.current = null; 
+        }
+    });
+
+     const sendData = useCallback(async () => {
+        if (mousePathRef.current.length > 0) {
+            console.log("sending data because end");
+            onData([...mousePathRef.current]);
+            const dto: GameDTO = {score: 100, mouseCoordinates: mousePathRef.current}
+            const apiAnswer = await postGameApi(dto);
+            console.log("Game finished api answer: ", apiAnswer);
+        }
+        mousePathRef.current = []; 
+    }, [onData]);
+
+    useEffect(() => {
+
+        const cleanup = () => {
+            if (intervalRef.current) {
+                console.log('Cleanup: Stopping interval.')
+                window.clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
+
+        if (active) {
+            if (intervalRef.current !== null) {
+                return;
+            }
+
+            intervalRef.current = window.setInterval(() => {
+                const currentPos = currentMousePosRef.current;
+                if (currentPos) {
+                    mousePathRef.current.push(currentPos);
+                    console.log(active);
+                }
+            }, 500);
+
+        } else {
+            console.log('<Recorder/> cleanup');
+            cleanup();
+            sendData(); 
+            return;
+        }
+
+        
+        return cleanup;
+    }, [active, sendData]); 
 
     return null;
 }
@@ -74,7 +141,7 @@ export const MapView = () => {
     const features = useRef<string[]>([]);
     const startRef = useRef<number | null>(null);
     const endRef = useRef<number | null>(null);
-    const mousePositions = useRef<number[]>([]);
+    const mousePositions = useRef<MouseCoordinates[]>([]);
     const stopRecordMousePosition = useRef<(() => void) | null>(null);
 
     useEffect(() => {
@@ -152,15 +219,6 @@ export const MapView = () => {
         })
     }
 
-    const recordMousePositions = () => {
-        const id = setInterval(() => {
-            
-            mousePositions.current = [...mousePositions.current, ]
-            console.log("tick", performance.now());
-        }, 500);
-
-        return () => clearInterval(id);
-    }
 
     const startGame = () => {
         const startFeatures = features.current;
@@ -170,7 +228,6 @@ export const MapView = () => {
         setToGuessFeatures(startFeatures);
         setGuessedFeatures([]);
         setCurrentQuestion(startFeatures[Math.floor(Math.random() * startFeatures.length)]);
-        stopRecordMousePosition.current = recordMousePositions();
     }
 
     return (
@@ -208,7 +265,7 @@ export const MapView = () => {
                         /> 
                     }
                     <MapBounds data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
-                    {/*<Recorder active={true} onData={null}></Recorder>*/}
+                    <Recorder active={isPlaying} onData={(mP) => {mousePositions.current = mP; mousePositions.current.map((mP) => console.log(mP?.lat))}}></Recorder>
                 </MapContainer>
             </div>
         </div>
