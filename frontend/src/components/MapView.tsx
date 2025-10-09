@@ -5,6 +5,7 @@ import type { GeoJsonObject, Feature, Geometry } from "geojson";
 import L, { Layer } from 'leaflet';
 import { Button } from 'primereact/button';
 import { Menubar } from 'primereact/menubar';
+import { Slider } from 'primereact/slider';
 import type { Game } from "../models/Game";
 import { PathPreview } from "./PathPreview";
 import { Recorder } from "./Recorder";
@@ -20,6 +21,7 @@ export const MapView = () => {
     const [currentQuestion, setCurrentQuestion] = useState<string>("Steiermark");
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [finishedGame, setFinishedGame] = useState<Game | null>(null);
+    const [size, setSize] = useState<number>(800);
 
     const features = useRef<string[]>([]);
     const startRef = useRef<number | null>(null);
@@ -112,24 +114,46 @@ export const MapView = () => {
         setCurrentQuestion(startFeatures[Math.floor(Math.random() * startFeatures.length)]);
     }
 
+    const buttonQuestion =  (
+         <div style={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {isPlaying ? (
+                <div>{ currentQuestion }</div>
+            ) : (
+                <Button onClick={() => {startGame(); startRef.current = performance.now();}}>START GAME</Button>
+            )}
+        </div>
+    )
+
+    const sizeSlider = (
+        <div style={{width: '200px'}}>
+            <Slider 
+                value={size} 
+                onChange={(e) => setSize(e.value as number)}
+                min={100}
+                max={2000}
+                step={50}
+            />
+        </div>
+    )
+
     return (
         <div style={{ 
             display: 'flex',
             flexDirection: 'column',
             alignItems: "center"
         }}>
-        
         <div style={{
-            padding: '20px'
+            width: '100%'
         }}>
-        { isPlaying ? (
-            <div>{ currentQuestion }</div>
-        ) : (
-            <Button onClick={() => {startGame(); startRef.current = performance.now();}}>START GAME</Button>
-        )}
+        <Menubar 
+            start={buttonQuestion}
+            end={sizeSlider}
+            style={{ width: '100%'}}
+            />
+        
         </div>
         
-            <div id="map-container-wrapper" style={{height: 800, width: 800*1.88 }}>
+            <div id="map-container-wrapper" style={{height: size, width: size*1.88 }}>
                 <MapContainer
                     style={{width: '100%', height: '100%'}}
                     zoomControl={false}
@@ -153,7 +177,7 @@ export const MapView = () => {
                     }
                     <Recorder active={isPlaying} onData={(mP) => {setFinishedGame(mP)}}></Recorder>
                     { !isPlaying && <PathPreview game={finishedGame} />}
-                    <MapBounds data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
+                    <MapBounds size={size} data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
                 </MapContainer>
             </div>
             <Tooltip 

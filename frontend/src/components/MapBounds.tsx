@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Rectangle, useMap } from "react-leaflet";
 import L, { Layer } from 'leaflet';
 
-export const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, changeLatLngRatio: (ratio: number) => void}) => {
+export const MapBounds = ({size, data, changeLatLngRatio}: { size: number, data: GeoJsonObject | null, changeLatLngRatio: (ratio: number) => void}) => {
     const map = useMap();
     const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
 
@@ -37,7 +37,7 @@ export const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | nul
             console.error("Fehler beim Verarbeiten der GeoJSON-Bounds:", error);
         }
     // Die Abhängigkeit sorgt dafür, dass die Karte neu angepasst wird, wenn sich die Daten ändern
-    }, [data, map]); 
+    }, [size, data, map]); 
 
     return bounds ? (
         <Rectangle

@@ -3,6 +3,7 @@ import { ApiTest } from './components/ApiTest';
 import 'primereact/resources/themes/saga-blue/theme.css';  // or another theme
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import { Menubar } from 'primereact/menubar';
 
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
 
   return (
     <>
+    <Menubar></Menubar>
       <div
         style={{
           width: '100%',

@@ -25,13 +25,18 @@ export const PathPreview = ({game}: {game?: Game | null}) => {
             pathOptions={{color: "red", weight: 3}}
             pane = 'overlayPane'
         />
-        {positions.map((pos, i) => (
-            <CircleMarker
+        {game.mouseCoordinates.map((c, i) => (
+        <CircleMarker
             key={i}
-            center={pos}
-            radius={4}
-            pathOptions={{ color: "blue", fillColor: "blue", fillOpacity: 1 }}
-            />
+            center={[c.lat, c.lng]}
+            radius={5}
+            pathOptions={{
+                color: c.click === false ? "blue" : "yellow",
+                weight: c.click === false ? 0.5 : 1,
+                fillColor: c.click === false ? "blue" : "yellow",
+                fillOpacity: c.click === false ? 0 : 1
+            }}
+        />
         ))}
         </>
     )
