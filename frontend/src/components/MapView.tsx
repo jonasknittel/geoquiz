@@ -1,168 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MapContainer, Rectangle, TileLayer, useMap, GeoJSON, useMapEvents, Polyline, CircleMarker } from "react-leaflet"
-import type { GeoJsonObject, Feature, Geometry, FeatureCollection } from "geojson";
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState } from "react";
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet"
+import type { GeoJsonObject, Feature, Geometry } from "geojson";
+
 import L, { Layer } from 'leaflet';
 import { Button } from 'primereact/button';
-import { MouseCoordinates } from "../models/MouseCoordinates";
-import { postGameApi } from "../api/GameApi";
-import type { GameDTO } from "../DTOs/gameDTO";
+import { Menubar } from 'primereact/menubar';
 import type { Game } from "../models/Game";
+import { PathPreview } from "./PathPreview";
+import { Recorder } from "./Recorder";
+import { MapBounds } from "./MapBounds";
+import { Tooltip } from "react-tooltip";
 
-const MapBounds = ({data, changeLatLngRatio}: { data: GeoJsonObject | null, changeLatLngRatio: (ratio: number) => void}) => {
-    const map = useMap();
-    const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
-
-    useEffect(() => {
-        if (!data) return;
-
-        try {
-            const geoJsonLayer = L.geoJSON(data as any); 
-            const bounds = geoJsonLayer.getBounds();
-
-            if (bounds.isValid()) {
-                map.invalidateSize(true);
-                map.fitBounds(bounds, {
-                    padding: [10, 10],
-                });
-                setBounds(bounds);
-
-                // Ratio berechnen
-                const sw = bounds.getSouthWest();
-                const ne = bounds.getNorthEast();
-
-                const nw = L.latLng(ne.lat, sw.lng);
-
-                const widthMeters = nw.distanceTo(ne);
-                const heightMeters = nw.distanceTo(sw);
-
-                changeLatLngRatio(widthMeters/heightMeters);
-                console.log(widthMeters/heightMeters);
-            }
-        } catch (error) {
-            console.error("Fehler beim Verarbeiten der GeoJSON-Bounds:", error);
-        }
-    // Die Abhängigkeit sorgt dafür, dass die Karte neu angepasst wird, wenn sich die Daten ändern
-    }, [data, map]); 
-
-    return bounds ? (
-        <Rectangle
-        bounds={bounds}
-        pathOptions={{
-            color: "red",
-            weight: 3,
-            fillOpacity: 0,
-            dashArray: "5, 5",
-            pane: 'tilePane'
-        }}
-        />
-    ) : null;
-}
-
-type RecorderProps = {
-    active: boolean;
-    onData: (data: MouseCoordinates[]) => void;
-}
-
-const Recorder = ({ active, onData }: {active: boolean, onData: (data:any) => void }) => {
-    const currentMousePosRef = useRef<MouseCoordinates>(null); 
-    const mousePathRef = useRef<MouseCoordinates[]>([]); 
-    const intervalRef = useRef<number | null>(null);
-
-    useMapEvents({
-        mousemove: (e) => {
-            currentMousePosRef.current = {
-                lat: e.latlng.lat,
-                lng: e.latlng.lng,
-                time: performance.now(),
-                click: e.originalEvent.buttons === 1,
-            };
-        },
-        mouseout: () => {
-            currentMousePosRef.current = null; 
-        }
-    });
-
-     const sendData = useCallback(async () => {
-        if (mousePathRef.current.length > 0) {
-            const dto: GameDTO = {score: 100, mouseCoordinates: mousePathRef.current}
-            const apiAnswer = await postGameApi(dto);
-            console.log("Game finished api answer: ", apiAnswer);
-            onData(apiAnswer);
-        }
-        mousePathRef.current = []; 
-    }, [onData]);
-
-    useEffect(() => {
-
-        const cleanup = () => {
-            if (intervalRef.current) {
-                console.log('Cleanup: Stopping interval.')
-                window.clearInterval(intervalRef.current);
-                intervalRef.current = null;
-            }
-        };
-
-        if (active) {
-            if (intervalRef.current !== null) {
-                return;
-            }
-
-            intervalRef.current = window.setInterval(() => {
-                const currentPos = currentMousePosRef.current;
-                if (currentPos) {
-                    mousePathRef.current.push(currentPos);
-                    console.log(active);
-                }
-            }, 10);
-
-        } else {
-            console.log('<Recorder/> cleanup');
-            cleanup();
-            sendData(); 
-            return;
-        }
-
-        
-        return cleanup;
-    }, [active]); 
-
-    return null;
-}
-
-const PathPreview = ({game}: {game?: Game | null}) => {
-    useEffect(() => {
-        if (game === null) {
-            console.log('game is null');
-        } else {
-            console.log(game);
-        }
-        
-    }, [game]);
-
-    if (!game || !game.mouseCoordinates || game.mouseCoordinates.length === 0) {
-        return null;
-    }
-
-    const positions = game.mouseCoordinates.map((c) => [c.lat, c.lng] as [number, number]);
-    return (
-        <>
-        <Polyline
-            positions={positions}
-            pathOptions={{color: "red", weight: 3}}
-            pane = 'overlayPane'
-        />
-        {positions.map((pos, i) => (
-            <CircleMarker
-            key={i}
-            center={pos}
-            radius={4}
-            pathOptions={{ color: "blue", fillColor: "blue", fillOpacity: 1 }}
-            />
-        ))}
-        </>
-    )
-}
 
 export const MapView = () => {
     const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
@@ -171,11 +19,11 @@ export const MapView = () => {
     const [guessedFeatures, setGuessedFeatures] = useState<string[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<string>("Steiermark");
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [finishedGame, setFinishedGame] = useState<Game | null>(null);
 
     const features = useRef<string[]>([]);
     const startRef = useRef<number | null>(null);
     const endRef = useRef<number | null>(null);
-    const finishedGame = useRef<Game>(null);
     const stopRecordMousePosition = useRef<(() => void) | null>(null);
 
     useEffect(() => {
@@ -270,13 +118,18 @@ export const MapView = () => {
             flexDirection: 'column',
             alignItems: "center"
         }}>
+        
         <div style={{
             padding: '20px'
         }}>
-        { isPlaying ? <div>{ currentQuestion }</div> : <Button onClick={() => {startGame(); startRef.current = performance.now();}}>START GAME</Button>}
+        { isPlaying ? (
+            <div>{ currentQuestion }</div>
+        ) : (
+            <Button onClick={() => {startGame(); startRef.current = performance.now();}}>START GAME</Button>
+        )}
         </div>
-
-            <div style={{height: 800, width: 800 * ratio}}>
+        
+            <div id="map-container-wrapper" style={{height: 800, width: 800*1.88 }}>
                 <MapContainer
                     style={{width: '100%', height: '100%'}}
                     zoomControl={false}
@@ -298,11 +151,18 @@ export const MapView = () => {
                             style={getFeatureStyle}
                         /> 
                     }
+                    <Recorder active={isPlaying} onData={(mP) => {setFinishedGame(mP)}}></Recorder>
+                    { !isPlaying && <PathPreview game={finishedGame} />}
                     <MapBounds data={geoData} changeLatLngRatio = {(ratio) => {setRatio(ratio)}} />
-                    <Recorder active={isPlaying} onData={(mP) => {finishedGame.current = mP;}}></Recorder>
-                    <PathPreview game={finishedGame.current} />
                 </MapContainer>
             </div>
+            <Tooltip 
+                anchorSelect="#map-container-wrapper" 
+                content={currentQuestion} 
+                float={true}
+                place="top"
+                style={{zIndex: 999}}
+            />
         </div>
     )
 }
